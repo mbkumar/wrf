@@ -1,0 +1,61 @@
+Bootstrap: docker
+From: medbha/spack_base:0.0.4
+
+%post
+
+    # Update environment variables
+    source /opt/spack/share/spack/setup-env.sh
+    export NETCDF=/opt/spack/opt/spack/linux-rocky8-zen/gcc-8.5.0/netcdf-c-4.9.2-wu36i5qh6etnojsoumgqpoaaz2nj6nx6
+    spack load mpich
+    export WRF_DIR=/packages/WRFV4.6.0 
+    export PATH=/packages/grib2/bin:$PATH
+    export LD_LIBRARY_PATH=/packages/grib2/lib:$LD_LIBRARY_PATH
+    export JASPERLIB=/packages/grib2/lib
+    export JASPERINC=/packages/grib2/include
+
+    # Create necessary directories for grib2
+    mkdir -p /packages/grib2/lib
+    mkdir -p /packages/grib2/include
+    mkdir -p /packages/grib2/bin
+
+    # Create symbolic links for libraries and include files
+    ln -sf /opt/spack/opt/spack/linux-rocky8-zen/gcc-8.5.0/netcdf-fortran-4.6.1-ojojdkelrkcrpspy5uauahrnn4o36lgz/lib/libnetcdff.* /opt/spack/opt/spack/linux-rocky8-zen/gcc-8.5.0/netcdf-c-4.9.2-wu36i5qh6etnojsoumgqpoaaz2nj6nx6/lib
+    ln -sf /opt/spack/opt/spack/linux-rocky8-zen/gcc-8.5.0/netcdf-fortran-4.6.1-ojojdkelrkcrpspy5uauahrnn4o36lgz/include/* /opt/spack/opt/spack/linux-rocky8-zen/gcc-8.5.0/netcdf-c-4.9.2-wu36i5qh6etnojsoumgqpoaaz2nj6nx6/include
+    ln -sf /opt/spack/opt/spack/linux-rocky8-zen/gcc-8.5.0/netcdf-fortran-4.6.1-ojojdkelrkcrpspy5uauahrnn4o36lgz/bin/* /opt/spack/opt/spack/linux-rocky8-zen/gcc-8.5.0/netcdf-c-4.9.2-wu36i5qh6etnojsoumgqpoaaz2nj6nx6/bin
+    ln -sf /opt/spack/opt/spack/linux-rocky8-zen/gcc-8.5.0/zlib-ng-2.1.6-cid3eurhnvfnywqtnvy5qpjvoqa37eew/lib/* /packages/grib2/lib
+    ln -sf /opt/spack/opt/spack/linux-rocky8-zen/gcc-8.5.0/zlib-ng-2.1.6-cid3eurhnvfnywqtnvy5qpjvoqa37eew/include/* /packages/grib2/include
+    ln -sf /opt/spack/opt/spack/linux-rocky8-zen/gcc-8.5.0/libpng-1.6.39-7ebopc2kwn4p4z42l2zcrpdmt7ylontv/lib/* /packages/grib2/lib
+    ln -sf /opt/spack/opt/spack/linux-rocky8-zen/gcc-8.5.0/libpng-1.6.39-7ebopc2kwn4p4z42l2zcrpdmt7ylontv/lib64/* /packages/grib2/lib
+    ln -sf /opt/spack/opt/spack/linux-rocky8-zen/gcc-8.5.0/libpng-1.6.39-7ebopc2kwn4p4z42l2zcrpdmt7ylontv/include/* /packages/grib2/include
+    ln -sf /opt/spack/opt/spack/linux-rocky8-zen/gcc-8.5.0/libpng-1.6.39-7ebopc2kwn4p4z42l2zcrpdmt7ylontv/bin/* /packages/grib2/bin
+    ln -sf /opt/spack/opt/spack/linux-rocky8-zen/gcc-8.5.0/jasper-1.900.1-z3li3taevwfdu4emxuf74svyezn3vwkv/lib/* /packages/grib2/lib
+    ln -sf /opt/spack/opt/spack/linux-rocky8-zen/gcc-8.5.0/jasper-1.900.1-z3li3taevwfdu4emxuf74svyezn3vwkv/include/* /packages/grib2/include
+    ln -sf /opt/spack/opt/spack/linux-rocky8-zen/gcc-8.5.0/jasper-1.900.1-z3li3taevwfdu4emxuf74svyezn3vwkv/bin/* /packages/grib2/bin
+       
+    # Download and compile WRF
+    wget https://github.com/wrf-model/WRF/releases/download/v4.6.0/v4.6.0.tar.gz -P /packages && \
+    cd /packages && \
+    tar -zxvf v4.6.0.tar.gz && \
+    cd WRFV4.6.0 && \
+    echo "34" | ./configure 2>&1 | tee log.configure && \
+    sed -i 's|^FCFLAGS.*=.*|FCFLAGS = $(FCOPTIM) $(FCBASEOPTS) |' configure.wrf && \
+    ./compile em_real 2>&1 | tee log.compile
+
+    # Download and compile WPS
+    wget https://github.com/wrf-model/WPS/archive/refs/tags/v4.5.tar.gz -P /packages && \
+    cd /packages && \
+    tar -zxvf v4.5.tar.gz && \
+    cd WPS-4.5 && \
+    echo "3" | ./configure 2>&1 | tee log.configure && \
+    sed -i 's/^SFC.*=.*/SFC = gfortran/' configure.wps && \
+    sed -i 's/^SCC.*=.*/SCC = gcc/' configure.wps && \
+    sed -i 's/^DM_FC.*=.*/DM_FC = mpifort/' configure.wps && \
+    sed -i 's/^DM_CC.*=.*/DM_CC = mpicc/' configure.wps && \
+    # sed -i 's/^CFLAGS.*=.*/CFLAGS = -w -std=c89/' configure.wps && \
+    ./compile >& log.compile
+
+
+%environment
+
+export LD_LIBRARY_PATH=/opt/spack/opt/spack/linux-rocky8-zen/gcc-8.5.0/netcdf-c-4.9.2-wu36i5qh6etnojsoumgqpoaaz2nj6nx6/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/opt/spack/opt/spack/linux-rocky8-zen/gcc-8.5.0/netcdf-fortran-4.6.1-ojojdkelrkcrpspy5uauahrnn4o36lgz/lib:$LD_LIBRARY_PATH

@@ -50,10 +50,10 @@ jobs:
       - name: Build Container
         run: |
           ls ${SINGULARITY_ROOT}
-          sudo -E ${SINGULARITY_ROOT}/bin/singularity build wrf_spack_containerize_intel.sif def_files/wrf_spack_containerize_intel.def
+          sudo -E ${SINGULARITY_ROOT}/bin/singularity build wrf-spack-gcc.sif def_files/wrf-spack-gcc.def
 
       - name: Login and Deploy Container
         if: (github.event_name != 'pull_request')
         run: |         
           echo ${{ secrets.GITHUB_TOKEN }} | singularity remote login -u ${{ secrets.GHCR_USERNAME }} --password-stdin oras://ghcr.io
-          singularity push wrf_spack_containerize_intel.sif oras://ghcr.io/wrf_spack_containerize_intel:${tag}
+          singularity push wrf-spack-gcc.sif oras://ghcr.io/wrf-spack-gcc:${tag}
