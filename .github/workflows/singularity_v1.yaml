@@ -50,6 +50,9 @@ jobs:
           ls ${SINGULARITY_ROOT}
           singularity build wrf-spack-gcc.sif def_files/wrf-spack-gcc.def
 
+      - name: Post build check files
+        run: ls
+
       - name: Login and Deploy Container
         if: (github.event_name != 'pull_request')
         run: |         
