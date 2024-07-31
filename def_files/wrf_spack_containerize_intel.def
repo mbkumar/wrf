@@ -1,0 +1,73 @@
+Bootstrap: docker
+From: medbha/e4s_wrf_intel:0.0.1
+
+%post
+  # Create directories for symbolic links
+  mkdir -p /opt/grib2/share /opt/netcdf/include /opt/netcdf/share /opt/netcdf/lib /opt/netcdf/bin
+
+  # Find paths dynamically using spack and create symbolic links
+  LIBPNG_PATH=$(spack find -p libpng | grep libpng | awk '{print $2}')
+  ZLIB_PATH=$(spack find -p zlib | grep zlib | awk '{print $2}')
+  NETCDF_C_PATH=$(spack find -p netcdf-c | grep netcdf-c | awk '{print $2}')
+  NETCDF_FORTRAN_PATH=$(spack find -p netcdf-fortran | grep netcdf-fortran | awk '{print $2}')
+  OPENMPI_PATH=$(spack find -p openmpi | grep openmpi | awk '{print $2}')
+
+  # Create symbolic links for libpng in grib2
+  ln -sf ${LIBPNG_PATH}/include/* /opt/grib2/include/
+  ln -sf ${LIBPNG_PATH}/lib/libpng* /opt/grib2/lib/
+  ln -sf ${LIBPNG_PATH}/lib64/libpng* /opt/grib2/lib/
+  ln -sf ${LIBPNG_PATH}/bin/* /opt/grib2/bin/
+  ln -sf ${LIBPNG_PATH}/share/* /opt/grib2/share/
+
+  # Create symbolic links for zlib in grib2
+  ln -sf ${ZLIB_PATH}/include/* /opt/grib2/include/
+  ln -sf ${ZLIB_PATH}/lib/libz* /opt/grib2/lib/
+  ln -sf ${ZLIB_PATH}/bin/* /opt/grib2/bin/
+  ln -sf ${ZLIB_PATH}/share/* /opt/grib2/share/
+
+  # Create symbolic links for netcdf-c in netcdf
+  ln -sf ${NETCDF_C_PATH}/include/* /opt/netcdf/include/
+  ln -sf ${NETCDF_C_PATH}/lib/libnetcdf* /opt/netcdf/lib/
+  ln -sf ${NETCDF_C_PATH}/bin/* /opt/netcdf/bin/
+  ln -sf ${NETCDF_C_PATH}/share/* /opt/netcdf/share/
+
+  # Create symbolic links for netcdf-fortran in netcdf
+  ln -sf ${NETCDF_FORTRAN_PATH}/include/* /opt/netcdf/include/
+  ln -sf ${NETCDF_FORTRAN_PATH}/lib/libnetcdff* /opt/netcdf/lib/
+  ln -sf ${NETCDF_FORTRAN_PATH}/bin/* /opt/netcdf/bin/
+  ln -sf ${NETCDF_FORTRAN_PATH}/share/* /opt/netcdf/share/
+
+  # Export environment variables
+  export PATH=${OPENMPI_PATH}/bin:$PATH
+  export NETCDF=/opt/netcdf
+  export JASPERLIB=/opt/grib2/lib
+  export JASPERINC=/opt/grib2/include
+  export PATH=/opt/grib2/bin:$PATH
+  export LD_LIBRARY_PATH=/opt/grib2/lib:$LD_LIBRARY_PATH
+  export PATH=/opt/netcdf/bin:$PATH
+  export LD_LIBRARY_PATH=/opt/netcdf/lib:$LD_LIBRARY_PATH
+  export WRF_DIR=/packages/WRFV4.6.0
+
+  # Install WRF
+  wget https://github.com/wrf-model/WRF/releases/download/v4.6.0/v4.6.0.tar.gz -P /packages
+  cd /packages
+  tar -zxvf v4.6.0.tar.gz
+  cd WRFV4.6.0
+  . /spack/share/spack/setup-env.sh && spack load intel-oneapi-compilers
+  export NETCDF_classic=1
+  echo "78" | ./configure 2>&1 | tee log.configure
+  ./compile em_real 2>&1 | tee log.compile
+
+  # Install WPS
+  wget https://github.com/wrf-model/WPS/archive/refs/tags/v4.5.tar.gz -P /packages
+  cd /packages
+  tar -zxvf v4.5.tar.gz
+  cd WPS-4.5
+  echo "19" | ./configure 2>&1 | tee log.configure
+  sed -i '62s|.*|COMPRESSION_LIBS    = -L/opt/grib2/lib -L/opt/netcdf/lib -ljasper -lpng -lz|' configure.wps
+  sed -i 's/^SFC.*=.*/SFC = mpifort/' configure.wps
+  sed -i 's/^SCC.*=.*/SCC = mpicc/' configure.wps
+  sed -i 's/^DM_FC.*=.*/DM_FC = mpifort/' configure.wps
+  sed -i 's/^DM_CC.*=.*/DM_CC = mpicc/' configure.wps
+  sed -i 's/^CFLAGS.*=.*/CFLAGS = -w -std=c89/' configure.wps
+  ./compile 2>&1 | tee log.compile
