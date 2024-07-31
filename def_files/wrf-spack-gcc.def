@@ -56,6 +56,6 @@ From: medbha/spack_base:0.0.4
 
 
 %environment
-
+export LD_LIBRARY_PATH=/packages/grib2/lib:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=/opt/spack/opt/spack/linux-rocky8-zen/gcc-8.5.0/netcdf-c-4.9.2-wu36i5qh6etnojsoumgqpoaaz2nj6nx6/lib:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=/opt/spack/opt/spack/linux-rocky8-zen/gcc-8.5.0/netcdf-fortran-4.6.1-ojojdkelrkcrpspy5uauahrnn4o36lgz/lib:$LD_LIBRARY_PATH
