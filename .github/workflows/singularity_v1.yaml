@@ -16,15 +16,15 @@ on:
 jobs:
   build-containers:
     runs-on: ubuntu-latest
-    # container:
-    #   image: quay.io/singularity/singularity:v3.9.3
-    #   options: --security-opt seccomp=unconfined --security-opt systempaths=unconfined
+      container:
+        image: quay.io/singularity/singularity:v3.11.5
+        options: --security-opt seccomp=unconfined --security-opt systempaths=unconfined
     strategy:
       fail-fast: true
 
-    container:
-        image: quay.io/singularity/singularity:v4.1.0
-        options: --privileged
+    # container:
+    #    image: quay.io/singularity/singularity:v4.1.0
+    #    options: --privileged
 
     name: Build singularity
     steps:
