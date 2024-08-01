@@ -16,9 +16,9 @@ on:
 jobs:
   build-containers:
     runs-on: ubuntu-latest
-      container:
-        image: quay.io/singularity/singularity:v3.11.5
-        options: --security-opt seccomp=unconfined --security-opt systempaths=unconfined
+    container:
+       image: quay.io/singularity/singularity:v3.11.5
+       options: --security-opt seccomp=unconfined --security-opt systempaths=unconfined
     strategy:
       fail-fast: true
 
